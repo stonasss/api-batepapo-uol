@@ -3,16 +3,15 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 
-dotenv.config()
+dotenv.config();
 
-const PORT = 5000;
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
 
 mongoClient
   .connect()
   .then(() => {
-    db = mongoClient.db("batepapo-uol");
+    db = mongoClient.db();
     console.log("Conectado ao mongodb!");
   })
   .catch(() => {
@@ -36,8 +35,23 @@ server.get("/participants", (req, res) => {
     });
 });
 
-/*server.post("/participants", (req, res) => ) */
+server.post("/participants", (req, res) => {
+  const { name } = req.body;
 
+  db.collection("participants")
+    .insertOne({ name })
+    .then(() => {
+      res.status(201).send("Participante registrado");
+    })
+    .catch(() => {
+      if (name === null) {
+        res.status(422).send("Preencha o campo vazio");
+      }
+      res.status(422).send("Participante não registrado");
+    });
+});
+
+const PORT = process.env.PORT;
 server.listen(PORT, () => {
   console.log("Servidor aberto!");
 });
