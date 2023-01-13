@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
+import dayjs from "dayjs";
+import Joi from "joi";
 dotenv.config();
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
@@ -24,6 +26,7 @@ server.get("/participants", (req, res) => {
     .catch(() => {
       res.status(500).send("Problema no servidor de banco de dados");
     });
+    return res.status(201).send("Participantes obtidos")
 });
 
 server.get("/messages", (req, res) => {
@@ -49,10 +52,13 @@ server.post("/messages", async (req, res) => {
 
 server.post("/participants", async (req, res) => {
   const { name } = req.body;
-  const validUser = participantSchema.validate({ name });
   const date = dayjs().format("hh:mm:ss");
   const lastStatus = Date.now();
 
+  const userSchema = Joi.object({
+    name: Joi.string().required()
+  })
+  const validUser = userSchema.validate({ name })
   if (validUser.error) return res.status(422).send("Participante inválido")
 
   if (name === "") return res.status(422).send("Preencha o campo vazio");
