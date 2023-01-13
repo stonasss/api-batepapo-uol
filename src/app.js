@@ -1,9 +1,12 @@
 import express from "express";
 import cors from "cors";
 import { MongoClient } from "mongodb";
+import dotenv from "dotenv";
+
+dotenv.config()
 
 const PORT = 5000;
-const mongoClient = new MongoClient("mongodb://127.0.0.1:27017");
+const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
 
 mongoClient
@@ -32,6 +35,8 @@ server.get("/participants", (req, res) => {
       res.status(500).send("Problema no servidor de banco de dados");
     });
 });
+
+/*server.post("/participants", (req, res) => ) */
 
 server.listen(PORT, () => {
   console.log("Servidor aberto!");
