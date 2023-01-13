@@ -2,21 +2,12 @@ import express from "express";
 import cors from "cors";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
-
 dotenv.config();
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
-
-mongoClient
-  .connect()
-  .then(() => {
-    db = mongoClient.db();
-    console.log("Conectado ao mongodb!");
-  })
-  .catch(() => {
-    console.log("Erro na conexão");
-  });
+await mongoClient.connect();
+db = mongoClient.db();
 
 const server = express();
 server.use(express.json());
@@ -35,20 +26,53 @@ server.get("/participants", (req, res) => {
     });
 });
 
-server.post("/participants", (req, res) => {
-  const { name } = req.body;
+server.get("/messages", (req, res) => {
+  console.log(req.query);
+  const { limit } = req.query;
 
-  db.collection("participants")
-    .insertOne({ name })
-    .then(() => {
-      res.status(201).send("Participante registrado");
-    })
-    .catch(() => {
-      if (name === null) {
-        res.status(422).send("Preencha o campo vazio");
-      }
-      res.status(422).send("Participante não registrado");
+  const messages = db
+    .collection("messages")
+    .find()
+    .toArray()
+    .then((dados) => {
+      const recentMsgs = dados.reverse().slice(0, parseInt(limit));
+      return res.send(recentMsgs);
     });
+});
+
+server.post("/messages", async (req, res) => {
+  const { to, text, type } = req.body;
+
+  if (type !== "private_message" || type !== "message")
+    return res.status(422).send("Tipo de mensagem inválido");
+});
+
+server.post("/participants", async (req, res) => {
+  const { name } = req.body;
+  const validUser = participantSchema.validate({ name });
+  const date = dayjs().format("hh:mm:ss");
+  const lastStatus = Date.now();
+
+  if (validUser.error) return res.status(422).send("Participante inválido")
+
+  if (name === "") return res.status(422).send("Preencha o campo vazio");
+
+  try {
+    const userExists = await db.collection("participants").findOne({ name });
+    if (userExists) return res.status(409).send("Participante já existe");
+    await db.collection("participants").insertOne({ name, lastStatus });
+    await db.collection("messages").insertOne({
+      from: name,
+      to: "Todos",
+      text: "entra na sala...",
+      type: "status",
+      time: date
+    })
+  } catch (err) {
+    console.log(err);
+    res.status(422).send("Participante não registrado");
+  }
+  res.status(201).send("Participante registrado");
 });
 
 const PORT = process.env.PORT;
