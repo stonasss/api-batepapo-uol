@@ -85,6 +85,7 @@ server.post("/messages", async (req, res) => {
       type: type,
       time: date,
     });
+    res.status(201).send("Mensagem válida")
   } catch {
     res.status(422).send("Mensagem inválida");
   }
