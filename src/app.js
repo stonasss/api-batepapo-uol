@@ -58,7 +58,7 @@ server.post("/participants", async (req, res) => {
   const userSchema = Joi.object({
     name: Joi.string().required()
   })
-  const validUser = userSchema.validate({ name })
+  const validUser = userSchema.validate({ name }, { abortEarly: false })
   if (validUser.error) return res.status(422).send("Participante inválido")
 
   if (name === "") return res.status(422).send("Preencha o campo vazio");
@@ -81,7 +81,7 @@ server.post("/participants", async (req, res) => {
   res.status(201).send("Participante registrado");
 });
 
-const PORT = process.env.PORT;
+const PORT = 5000;
 server.listen(PORT, () => {
   console.log("Servidor aberto!");
 });
