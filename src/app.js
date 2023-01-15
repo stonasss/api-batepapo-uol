@@ -15,6 +15,8 @@ const server = express();
 server.use(express.json());
 server.use(cors());
 
+const date = dayjs().format("hh:mm:ss");
+
 server.get("/participants", async (_, res) => {
   const participants = await db
     .collection("participants")
@@ -58,7 +60,6 @@ server.get("/messages", async (req, res) => {
 server.post("/messages", async (req, res) => {
   const { to, text, type } = req.body;
   const user = req.headers.User;
-  const date = dayjs(Date.now()).format("hh:mm:ss");
 
   const msgSchema = Joi.object({
     to: Joi.string().required(),
@@ -92,14 +93,15 @@ server.post("/messages", async (req, res) => {
 
 server.post("/participants", async (req, res) => {
   const { name } = req.body;
-  const date = dayjs().format("hh:mm:ss");
   const lastStatus = Date.now();
 
   const userSchema = Joi.object({
     name: Joi.string().required(),
   });
+
   const validUser = userSchema.validate({ name }, { abortEarly: false });
-  if (validUser.error) return res.status(422).send("Participante inválido");
+
+  if (validUser.error) return res.status(422).send(validUser.error.details);
 
   if (name === "") return res.status(422).send("Preencha o campo vazio");
 
@@ -114,11 +116,10 @@ server.post("/participants", async (req, res) => {
       type: "status",
       time: date,
     });
-  } catch (err) {
+    return res.status(201).send("Participante registrado");
+  } catch {
     console.log(err);
-    res.status(422).send("Participante não registrado");
   }
-  res.status(201).send("Participante registrado");
 });
 
 const PORT = 5000;
