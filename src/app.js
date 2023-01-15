@@ -18,8 +18,7 @@ server.use(cors());
 const date = dayjs().format("hh:mm:ss");
 
 server.get("/participants", async (_, res) => {
-  db
-    .collection("participants")
+  db.collection("participants")
     .find()
     .toArray()
     .then((data) => {
@@ -54,66 +53,74 @@ server.get("/messages", async (req, res) => {
 
 server.post("/messages", async (req, res) => {
   const { to, text, type } = req.body;
-  const user = req.headers.User;
+  const time = dayjs(Date.now()).format("hh:mm:ss");
+  const from = req.headers.user;
 
   const msgSchema = Joi.object({
     to: Joi.string().required(),
     text: Joi.string().required(),
     type: Joi.string().valid("private_message", "message").required(),
   });
+
   const validMsg = msgSchema.validate(
     { to, text, type },
     { abortEarly: false }
   );
+
   if (validMsg.error) return res.status(422).send(validMsg.error.details);
 
-  if (to === "" || type === "")
+  if (to === "" || type === "") {
     return res.status(422).send("Preencha os campos vazios");
-
-  try {
-    const Anon = await db.collection("messages").findOne({ user });
-    if (!Anon) return res.status(422).send("User inexistente");
-    await db.collection("messages").insertOne({
-      from: user,
-      to: to,
-      text: text,
-      type: type,
-      time: date,
-    });
-    res.status(201).send("Mensagem válida");
-  } catch {
-    res.status(422).send("Mensagem inválida");
+  } else {
+    try {
+      const Anon = await db.collection("messages").findOne({ name: from });
+      if (!Anon) {
+        return res.status(422).send("User inexistente");
+      } else {
+        await db.collection("messages").insertOne({
+          to,
+          text,
+          type,
+          from,
+          time
+        });
+        res.status(201).send("Mensagem válida");
+      }
+    } catch {
+      res.status(422).send("Mensagem inválida");
+    }
   }
 });
 
 server.post("/participants", async (req, res) => {
   const { name } = req.body;
   const lastStatus = Date.now();
+  let userExists;
 
-  const userSchema = Joi.object({
-    name: Joi.string().required(),
-  });
-
+  const userSchema = Joi.object({ name: Joi.string().required() });
   const validUser = userSchema.validate({ name }, { abortEarly: false });
 
-  if (validUser.error) return res.status(422).send(validUser.error.details);
-
-  if (name === null) return res.status(422).send("Preencha o campo vazio");
-
-  try {
-    const userExists = await db.collection("participants").findOne({ name });
-    if (userExists) return res.status(409).send("Participante já existe");
-    await db.collection("participants").insertOne({ name, lastStatus });
-    await db.collection("messages").insertOne({
-      from: name,
-      to: "Todos",
-      text: "entra na sala...",
-      type: "status",
-      time: date,
-    });
-    return res.status(201).send("Participante registrado");
-  } catch {
-    console.log(err);
+  if (name === null || validUser.error) {
+    return res.status(422).send("Usuário inválido");
+  } else {
+    try {
+      userExists = await db.collection("participants").findOne({ name });
+      if (userExists) {
+        return res.status(409).send("Participante já existe");
+      } else {
+        await db.collection("participants").insertOne({ name, lastStatus });
+        await db.collection("messages").insertOne({
+          from: name,
+          to: "Todos",
+          text: "entra na sala...",
+          type: "status",
+          time: date,
+        });
+      }
+      return res.status(201).send("Participante registrado");
+    } catch {
+      console.log(err);
+    }
   }
 });
 
