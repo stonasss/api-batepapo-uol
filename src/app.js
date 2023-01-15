@@ -30,7 +30,7 @@ server.get("/participants", async (_, res) => {
 });
 
 server.get("/messages", async (req, res) => {
-  const { user } = req.headers;
+  const user = req.headers.User;
   const { query } = req;
   const { limit } = req.query;
   const messages = await db.collection("messages").find().toArray();
@@ -50,7 +50,7 @@ server.get("/messages", async (req, res) => {
     if (limit) {
       return res.status(201).send(userMsgs.slice(-limit));
     }
-    return res.status(201).send(userMsgs.reverse());
+    return res.status(201).send(userMsgs);
   } catch (err) {
     console.log(err);
   }
