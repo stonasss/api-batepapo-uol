@@ -4,8 +4,8 @@ import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import dayjs from "dayjs";
 import Joi from "joi";
-dotenv.config();
 
+dotenv.config();
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
 await mongoClient.connect();
@@ -98,7 +98,7 @@ server.post("/participants", async (req, res) => {
 
   if (validUser.error) return res.status(422).send(validUser.error.details);
 
-  if (name === "") return res.status(422).send("Preencha o campo vazio");
+  if (name === null) return res.status(422).send("Preencha o campo vazio");
 
   try {
     const userExists = await db.collection("participants").findOne({ name });
