@@ -73,16 +73,16 @@ server.post("/messages", async (req, res) => {
     return res.status(422).send("Preencha os campos vazios");
   } else {
     try {
-      const Anon = await db.collection("messages").findOne({ name: from });
+      const Anon = await db.collection("participants").findOne({ name: from });
       if (!Anon) {
         return res.status(422).send("User inexistente");
       } else {
         await db.collection("messages").insertOne({
-          to,
-          text,
-          type,
-          from,
-          time
+          to: to,
+          text: text,
+          type: type,
+          from: from,
+          time: time
         });
         res.status(201).send("Mensagem válida");
       }
