@@ -18,17 +18,16 @@ server.use(cors());
 const date = dayjs().format("hh:mm:ss");
 
 server.get("/participants", async (_, res) => {
-  const participants = await db
+  db
     .collection("participants")
     .find()
     .toArray()
-    .then((dados) => {
-      return res.send(dados);
+    .then((data) => {
+      return res.send(data);
     })
     .catch(() => {
       res.status(500).send("Problema no servidor de banco de dados");
     });
-  return res.status(201).send(participants);
 });
 
 server.get("/messages", async (req, res) => {
@@ -36,25 +35,21 @@ server.get("/messages", async (req, res) => {
   const messages = await db.collection("messages").find().toArray();
   let limit;
 
-  try {
-    if (req.query.limit) {
-      limit = parseInt(req.query.limit);
-      if (limit < 1 || isNaN(limit)) {
-        return res.status(422).send("Query inválido");
-      }
+  if (req.query.limit) {
+    limit = parseInt(req.query.limit);
+    if (isNaN(limit) || limit < 1) {
+      return res.status(422).send("Query inválido");
     }
-    let userMsgs = messages.filter(
-      (msg) =>
-        msg.user === user ||
-        msg.to === "Todos" ||
-        msg.from === user ||
-        msg.to === user ||
-        msg.type === "status"
-    );
-    return res.status(200).send(userMsgs.splice(-limit).reverse());
-  } catch {
-    res.status(422).send("Pedido inválido");
   }
+  let userMsgs = messages.filter(
+    (msg) =>
+      msg.user === user ||
+      msg.to === "Todos" ||
+      msg.from === user ||
+      msg.to === user ||
+      msg.type === "status"
+  );
+  return res.status(200).send(userMsgs.splice(-limit).reverse());
 });
 
 server.post("/messages", async (req, res) => {
