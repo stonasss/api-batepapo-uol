@@ -30,29 +30,28 @@ server.get("/participants", async (_, res) => {
 });
 
 server.get("/messages", async (req, res) => {
-  const user = req.headers.User;
-  const { query } = req;
-  const { limit } = req.query;
+  const { user } = req.headers;
   const messages = await db.collection("messages").find().toArray();
-  let userMsgs = messages.filter(
-    (msg) =>
-      msg.user === user ||
-      msg.to === "Todos" ||
-      msg.from === user ||
-      msg.to === user ||
-      msg.type === "status"
-  );
+  let limit;
 
   try {
-    if (query && limit && isNaN(Number(limit) || Number(limit) < 1)) {
-      return res.status(422).send("Query inválido");
+    if (req.query.limit) {
+      limit = parseInt(req.query.limit);
+      if (limit < 1 || isNaN(limit)) {
+        return res.status(422).send("Query inválido");
+      }
     }
-    if (limit) {
-      return res.status(201).send(userMsgs.slice(-limit));
-    }
-    return res.status(201).send(userMsgs);
-  } catch (err) {
-    console.log(err);
+    let userMsgs = messages.filter(
+      (msg) =>
+        msg.user === user ||
+        msg.to === "Todos" ||
+        msg.from === user ||
+        msg.to === user ||
+        msg.type === "status"
+    );
+    return res.status(200).send(userMsgs.splice(-limit).reverse());
+  } catch {
+    res.status(422).send("Pedido inválido");
   }
 });
 
@@ -85,7 +84,7 @@ server.post("/messages", async (req, res) => {
       type: type,
       time: date,
     });
-    res.status(201).send("Mensagem válida")
+    res.status(201).send("Mensagem válida");
   } catch {
     res.status(422).send("Mensagem inválida");
   }
