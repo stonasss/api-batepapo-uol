@@ -82,7 +82,7 @@ server.post("/messages", async (req, res) => {
           text: text,
           type: type,
           from: from,
-          time: time
+          time: time,
         });
         res.status(201).send("Mensagem válida");
       }
@@ -94,7 +94,7 @@ server.post("/messages", async (req, res) => {
 
 server.post("/participants", async (req, res) => {
   const { name } = req.body;
-  const lastStatus = Date.now();
+  let lastStatus = Date.now();
   let userExists;
 
   const userSchema = Joi.object({ name: Joi.string().required() });
@@ -121,6 +121,24 @@ server.post("/participants", async (req, res) => {
     } catch {
       console.log(err);
     }
+  }
+});
+
+server.post("/status", async (req, res) => {
+  let updatedTime = Date.now();
+  const { user } = req.headers;
+  const userExists = await db
+    .collection("participants")
+    .findOne({ name: user });
+  const userStatus = { name: user, lastStatus: updatedTime };
+
+  if (!userExists) {
+    return res.status(404);
+  } else {
+    await db
+      .collection("participants")
+      .updateOne({ name: user }, { $set: userStatus });
+    return res.status(200);
   }
 });
 
