@@ -17,7 +17,7 @@ server.use(cors());
 
 const date = dayjs().format("hh:mm:ss");
 
-server.get("/participants", async (_, res) => {
+server.get("/participants", async (req, res) => {
   db.collection("participants")
     .find()
     .toArray()
@@ -125,22 +125,40 @@ server.post("/participants", async (req, res) => {
 });
 
 server.post("/status", async (req, res) => {
-  let updatedTime = Date.now();
+  const updatedTime = Date.now();
   const { user } = req.headers;
-  const userExists = await db
+  const userOnline = await db
     .collection("participants")
     .findOne({ name: user });
   const userStatus = { name: user, lastStatus: updatedTime };
 
-  if (!userExists) {
-    return res.status(404);
-  } else {
-    await db
-      .collection("participants")
-      .updateOne({ name: user }, { $set: userStatus });
-    return res.status(200);
-  }
+  if (!userOnline) return res.status(404);
+  await db
+    .collection("participants")
+    .updateOne({ name: user }, { $set: userStatus });
+  return res.status(200);
 });
+
+setInterval(async function removeAway() {
+  const updatedTime = Date.now();
+  const time = dayjs(Date.now()).format("hh:mm:ss");
+
+  const checkActivity = await db
+    .collection("participants")
+    .find({ lastStatus: { $lt: updatedTime - 10000 } })
+    .toArray();
+
+  checkActivity.forEach(async (user) => {
+    await db.collection("messages").insertOne({
+      from: user.name,
+      to: "Todos",
+      text: "sai da sala...",
+      type: "status",
+      time: time,
+    });
+    await db.collection("participants").deleteOne({ name: user.name });
+  });
+}, 15000);
 
 const PORT = 5000;
 server.listen(PORT, () => {
