@@ -124,23 +124,26 @@ server.post("/participants", async (req, res) => {
   }
 });
 
-server.post("status", async (req, res) => {
-  const time = Date.now();
+server.post("/status", async (req, res) => {
   const { user } = req.headers;
-  const userOnline = await db
+  const time = Date.now();
+  const userExists = await db
     .collection("participants")
     .findOne({ name: user });
   const currentStatus = { name: user, lastStatus: time };
 
-  if (!userOnline) {
-    res.status(404);
-    return;
+  try {
+    if (!userExists) {
+      res.status(404).send("Usuário inexistente");
+      return;
+    }
+    await db
+      .collection("participants")
+      .updateOne({ name: user }, { $set: currentStatus });
+    res.status(200).send("Usuário atualizado");
+  } catch (err) {
+    console.log(err);
   }
-  
-  await db
-    .collection("participants")
-    .updateOne({ name: user }, { $set: currentStatus });
-  res.status(200);
 });
 
 setInterval(async function removeAway() {
