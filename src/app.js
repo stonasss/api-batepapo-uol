@@ -40,7 +40,7 @@ server.get("/messages", async (req, res) => {
       return res.status(422).send("Query inválido");
     }
   }
-  let userMsgs = messages.filter(
+  const userMsgs = messages.filter(
     (msg) =>
       msg.user === user ||
       msg.to === "Todos" ||
@@ -94,7 +94,7 @@ server.post("/messages", async (req, res) => {
 
 server.post("/participants", async (req, res) => {
   const { name } = req.body;
-  let lastStatus = Date.now();
+  const lastStatus = Date.now();
   let userExists;
 
   const userSchema = Joi.object({ name: Joi.string().required() });
@@ -119,7 +119,7 @@ server.post("/participants", async (req, res) => {
       }
       return res.status(201).send("Participante registrado");
     } catch {
-      console.log(err);
+      console.log(error);
     }
   }
 });
